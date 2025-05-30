@@ -1,10 +1,17 @@
 using BasketAPI;
+using DiscountGrpc.Protos;
 using Scalar.AspNetCore;
-using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
+
+builder.Services.AddGrpcClient<DiscountProtoService.DiscountProtoServiceClient>(options =>
+{
+    options.Address = new Uri(builder.Configuration["GrpcSettings:DiscountUrl"]);
+});
+builder.Services.AddScoped<DiscountGrpcService>();
 
 var app = builder.Build();
 
@@ -22,6 +29,15 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 List<ShoppingCart> shoppingCarts = new List<ShoppingCart>();
+shoppingCarts.Add(new ShoppingCart()
+{
+    UserName = "Test",
+    Items = new List<ShoppingCartItem>
+    {
+        new ShoppingCartItem { ProductName = "Samsung 10", Price = 100, Quantity = 1 },
+        new ShoppingCartItem { ProductName = "IPhone X", Price = 200, Quantity = 2 }
+    }
+});
 
 app.MapGet("/basket/{userName}", GetBasket)
     .WithName("GetBasket");
@@ -42,20 +58,14 @@ ShoppingCart? GetBasket(string userName)
     return shoppingCarts.FirstOrDefault(x => x.UserName == userName);
 }
 
-ShoppingCart? UpdateBasket(string userName, ShoppingCart basket)
+async Task<ShoppingCart?> UpdateBasket(DiscountGrpcService discountGrpcService, ShoppingCart basket)
 {
-    //TODO: Apply discount
-    var cart = shoppingCarts.FirstOrDefault(x => x.UserName == userName);
-    if (cart == null)
+    foreach(var item in basket.Items)
     {
-        cart = new ShoppingCart(userName);
-        shoppingCarts.Add(cart);
+        var coupon = await discountGrpcService.GetDiscountAsync(item.ProductName);
+        item.Price -= coupon.Amount;
     }
-    else
-    {
-        cart = basket;
-    }
-    return cart;
+    return basket;
 }
 
 void DeleteBasket(string userName)

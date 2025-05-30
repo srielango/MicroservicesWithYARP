@@ -7,14 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.2" />
-	  <PackageReference Include="Scalar.AspNetCore" Version="2.2.7" />
-	  <PackageReference Include="Grpc.AspNetCore" Version="2.64.0" />
+    <Protobuf Include="Protos\discount.proto" GrpcServices="Server" />
   </ItemGroup>
 
-	<ItemGroup>
-		<Protobuf Include="..\DiscountGrpc\Protos\discount.proto" GrpcServices="Client">
-			<Link>Protos\discount.proto</Link>
-		</Protobuf>
-	</ItemGroup>
+  <ItemGroup>
+	  <PackageReference Include="Grpc.AspNetCore" Version="2.64.0" />
+	<PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
+  </ItemGroup>
+
 </Project>

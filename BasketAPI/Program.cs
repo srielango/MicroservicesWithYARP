@@ -31,7 +31,7 @@ app.UseHttpsRedirection();
 List<ShoppingCart> shoppingCarts = new List<ShoppingCart>();
 shoppingCarts.Add(new ShoppingCart()
 {
-    UserName = "Test",
+    UserName = "user1",
     Items = new List<ShoppingCartItem>
     {
         new ShoppingCartItem { ProductName = "Samsung 10", Price = 100, Quantity = 1 },

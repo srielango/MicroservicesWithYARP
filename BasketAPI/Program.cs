@@ -1,11 +1,14 @@
 using BasketAPI;
+using BasketAPI.Data;
 using DiscountGrpc.Protos;
+using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
-using System.Threading.Tasks;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseInMemoryDatabase("BasketDb"));
 
 builder.Services.AddGrpcClient<DiscountProtoService.DiscountProtoServiceClient>(options =>
 {
@@ -28,16 +31,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-List<ShoppingCart> shoppingCarts = new List<ShoppingCart>();
-shoppingCarts.Add(new ShoppingCart()
-{
-    UserName = "user1",
-    Items = new List<ShoppingCartItem>
-    {
-        new ShoppingCartItem { ProductName = "Samsung 10", Price = 100, Quantity = 1 },
-        new ShoppingCartItem { ProductName = "IPhone X", Price = 200, Quantity = 2 }
-    }
-});
+PrepareDb.LoadData(app);
 
 app.MapGet("/basket/{userName}", GetBasket)
     .WithName("GetBasket");
@@ -53,9 +47,11 @@ app.MapPost("/basket/{userName}/checkout", CheckoutBasket)
 
 app.Run();
 
-ShoppingCart? GetBasket(string userName)
+ShoppingCart? GetBasket(AppDbContext appDbContext, string userName)
 {
-    return shoppingCarts.FirstOrDefault(x => x.UserName == userName);
+    return appDbContext.ShoppingCarts
+        .Include(x => x.Items)
+        .FirstOrDefault(x => x.UserName == userName);
 }
 
 async Task<ShoppingCart?> UpdateBasket(DiscountGrpcService discountGrpcService, ShoppingCart basket)
@@ -68,25 +64,25 @@ async Task<ShoppingCart?> UpdateBasket(DiscountGrpcService discountGrpcService, 
     return basket;
 }
 
-void DeleteBasket(string userName)
+void DeleteBasket(AppDbContext appDbContext, string userName)
 {
-    var cart = shoppingCarts.FirstOrDefault(x => x.UserName == userName);
+    var cart = appDbContext.ShoppingCarts.FirstOrDefault(x => x.UserName == userName);
     if (cart != null)
     {
-        shoppingCarts.Remove(cart);
+        appDbContext.ShoppingCarts.Remove(cart);
     }
 }
 
-void CheckoutBasket(string userName)
+void CheckoutBasket(AppDbContext appDbContext, string userName)
 {
-    var cart = GetBasket(userName);
+    var cart = GetBasket(appDbContext, userName);
     if (cart == null)
     {
         throw new InvalidOperationException("Basket not found");
     }
     //Publish an event or call a payment service to process the payment.
     
-    DeleteBasket(userName);
+    DeleteBasket(appDbContext, userName);
 
     // Here you would typically process the payment and complete the order.
     // For this example, we'll just return the cart.

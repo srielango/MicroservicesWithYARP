@@ -1,4 +1,4 @@
-﻿namespace OrderingAPI
+﻿namespace OrderingAPI.Data
 {
     public class Order
     {

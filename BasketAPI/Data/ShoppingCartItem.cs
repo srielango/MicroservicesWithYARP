@@ -1,14 +1,14 @@
-﻿namespace BasketAPI;
+﻿namespace BasketAPI.Data;
 public class ShoppingCartItem
 {
-    public string ProductId { get; set; }
+    public string UserName { get; set; }
     public string ProductName { get; set; }
     public decimal Price { get; set; }
     public int Quantity { get; set; }
-    public string Color { get; set; }
-    public ShoppingCartItem(string productId, string productName, decimal price, int quantity)
+    public string? Color { get; set; }
+    public ShoppingCartItem(string userName, string productName, decimal price, int quantity)
     {
-        ProductId = productId;
+        UserName = userName;
         ProductName = productName;
         Price = price;
         Quantity = quantity;

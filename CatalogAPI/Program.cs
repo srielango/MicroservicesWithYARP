@@ -1,9 +1,12 @@
-using CatalogAPI.Models;
+using CatalogAPI.Data;
+using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseInMemoryDatabase("CatalogDb"));
 
 var app = builder.Build();
 
@@ -20,35 +23,58 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-var products = LoadProducts();
+PrapareDb.LoadData(app);
 
-app.MapGet("/products", () =>
-{
-    return products;
-}).WithName("GetProducts");
+app.MapGet("/products", GetProducts)
+    .WithName("GetProducts");
 
-app.MapGet("/products/{id:int}", (int id) =>
-{
-    return products.FirstOrDefault(p => p.Id == id);
-}).WithName("GetProductById");
+app.MapGet("/products/{id:int}", GetProductById)
+    .WithName("GetProductById");
 
-app.MapGet("/products/category/{category}", (string category) =>
-{
-    return products.Where(p => p.Category.Equals(category, StringComparison.OrdinalIgnoreCase));
-}).WithName("GetProductsByCategory");
+app.MapGet("/products/category/{category}", GetProductByCategory)
+    .WithName("GetProductsByCategory");
 
-app.MapPost("/products", (Product product) =>
+app.MapPost("/products", CreateProduct)
+    .WithName("CreateProduct");
+
+app.MapPut("/products/{id:int}", UpdateProduct)
+    .WithName("UpdateProduct");
+
+app.MapDelete("/products/{id:int}", DeleteProduct)
+    .WithName("DeleteProduct");
+
+app.Run();
+
+IResult GetProducts(AppDbContext appDbContext)
 {
-    products.Add(product);
+    return Results.Ok(appDbContext.Products.ToList());
+}
+
+IResult GetProductById(AppDbContext appDbContext, int id)
+{
+    return Results.Ok(appDbContext.Products.FirstOrDefault(p => p.Id == id));
+}
+
+IResult GetProductByCategory(AppDbContext appDbContext, string category)
+{
+    return Results.Ok(appDbContext.Products
+        .Where(p => p.Category.Equals(category, StringComparison.OrdinalIgnoreCase))
+        .ToList());
+}
+
+IResult CreateProduct(AppDbContext appDbContext, Product product)
+{
+    appDbContext.Products.Add(product);
+    appDbContext.SaveChanges();
     return Results.Created($"/products/{product.Id}", product);
-}).WithName("CreateProduct");
+}
 
-app.MapPut("/products/{id:int}", (int id, Product updatedProduct) =>
+IResult UpdateProduct(AppDbContext appDbContext, int id, Product updatedProduct)
 {
-    var product = products.FirstOrDefault(p => p.Id == id);
+    var product = appDbContext.Products.FirstOrDefault(p => p.Id == id);
     if (product == null)
     {
-        return Results.NotFound();
+        throw new KeyNotFoundException($"Product with ID {id} not found.");
     }
     product.Name = updatedProduct.Name;
     product.Category = updatedProduct.Category;
@@ -56,85 +82,19 @@ app.MapPut("/products/{id:int}", (int id, Product updatedProduct) =>
     product.Description = updatedProduct.Description;
     product.ImageFile = updatedProduct.ImageFile;
     product.Price = updatedProduct.Price;
+    appDbContext.SaveChanges();
     return Results.Ok(product);
-}).WithName("UpdateProduct");
+}
 
-app.MapDelete("/products/{id:int}", (int id) =>
+IResult DeleteProduct(AppDbContext appDbContext, int id)
 {
-    var product = products.FirstOrDefault(p => p.Id == id);
+    var product = appDbContext.Products.FirstOrDefault(p => p.Id == id);
     if (product == null)
     {
-        return Results.NotFound();
+        throw new KeyNotFoundException($"Product with ID {id} not found.");
     }
-    products.Remove(product);
+    appDbContext.Products.Remove(product);
+    appDbContext.SaveChanges();
+
     return Results.NoContent();
-}).WithName("DeleteProduct");
-
-app.Run();
-
-List<Product> LoadProducts()
-{
-    return new List<Product>()
-            {
-                new Product()
-                {
-                    Id = 1,
-                    Name = "IPhone X",
-                    Summary = "This phone is the company's biggest change to its flagship smartphone in years. It includes a borderless.",
-                    Description = "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Ut, tenetur natus doloremque laborum quos iste ipsum rerum obcaecati impedit odit illo dolorum ab tempora nihil dicta earum fugiat. Temporibus, voluptatibus. Lorem ipsum dolor sit amet, consectetur adipisicing elit. Ut, tenetur natus doloremque laborum quos iste ipsum rerum obcaecati impedit odit illo dolorum ab tempora nihil dicta earum fugiat. Temporibus, voluptatibus.",
-                    ImageFile = "product-1.png",
-                    Price = 950.00M,
-                    Category = "Smart Phone"
-                },
-                new Product()
-                {
-                    Id = 2,
-                    Name = "Samsung 10",
-                    Summary = "This phone is the company's biggest change to its flagship smartphone in years. It includes a borderless.",
-                    Description = "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Ut, tenetur natus doloremque laborum quos iste ipsum rerum obcaecati impedit odit illo dolorum ab tempora nihil dicta earum fugiat. Temporibus, voluptatibus. Lorem ipsum dolor sit amet, consectetur adipisicing elit. Ut, tenetur natus doloremque laborum quos iste ipsum rerum obcaecati impedit odit illo dolorum ab tempora nihil dicta earum fugiat. Temporibus, voluptatibus.",
-                    ImageFile = "product-2.png",
-                    Price = 840.00M,
-                    Category = "Smart Phone"
-                },
-                new Product()
-                {
-                    Id = 3,
-                    Name = "Huawei Plus",
-                    Summary = "This phone is the company's biggest change to its flagship smartphone in years. It includes a borderless.",
-                    Description = "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Ut, tenetur natus doloremque laborum quos iste ipsum rerum obcaecati impedit odit illo dolorum ab tempora nihil dicta earum fugiat. Temporibus, voluptatibus. Lorem ipsum dolor sit amet, consectetur adipisicing elit. Ut, tenetur natus doloremque laborum quos iste ipsum rerum obcaecati impedit odit illo dolorum ab tempora nihil dicta earum fugiat. Temporibus, voluptatibus.",
-                    ImageFile = "product-3.png",
-                    Price = 650.00M,
-                    Category = "White Appliances"
-                },
-                new Product()
-                {
-                    Id = 4,
-                    Name = "Xiaomi Mi 9",
-                    Summary = "This phone is the company's biggest change to its flagship smartphone in years. It includes a borderless.",
-                    Description = "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Ut, tenetur natus doloremque laborum quos iste ipsum rerum obcaecati impedit odit illo dolorum ab tempora nihil dicta earum fugiat. Temporibus, voluptatibus. Lorem ipsum dolor sit amet, consectetur adipisicing elit. Ut, tenetur natus doloremque laborum quos iste ipsum rerum obcaecati impedit odit illo dolorum ab tempora nihil dicta earum fugiat. Temporibus, voluptatibus.",
-                    ImageFile = "product-4.png",
-                    Price = 470.00M,
-                    Category = "White Appliances"
-                },
-                new Product()
-                {
-                    Id = 5,
-                    Name = "HTC U11+ Plus",
-                    Summary = "This phone is the company's biggest change to its flagship smartphone in years. It includes a borderless.",
-                    Description = "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Ut, tenetur natus doloremque laborum quos iste ipsum rerum obcaecati impedit odit illo dolorum ab tempora nihil dicta earum fugiat. Temporibus, voluptatibus. Lorem ipsum dolor sit amet, consectetur adipisicing elit. Ut, tenetur natus doloremque laborum quos iste ipsum rerum obcaecati impedit odit illo dolorum ab tempora nihil dicta earum fugiat. Temporibus, voluptatibus.",
-                    ImageFile = "product-5.png",
-                    Price = 380.00M,
-                    Category = "Smart Phone"
-                },
-                new Product()
-                {
-                    Id = 6,
-                    Name = "LG G7 ThinQ",
-                    Summary = "This phone is the company's biggest change to its flagship smartphone in years. It includes a borderless.",
-                    Description = "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Ut, tenetur natus doloremque laborum quos iste ipsum rerum obcaecati impedit odit illo dolorum ab tempora nihil dicta earum fugiat. Temporibus, voluptatibus. Lorem ipsum dolor sit amet, consectetur adipisicing elit. Ut, tenetur natus doloremque laborum quos iste ipsum rerum obcaecati impedit odit illo dolorum ab tempora nihil dicta earum fugiat. Temporibus, voluptatibus.",
-                    ImageFile = "product-6.png",
-                    Price = 240.00M,
-                    Category = "Home Kitchen"
-                }
-            };
 }

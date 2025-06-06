@@ -1,4 +1,4 @@
-﻿namespace CatalogAPI.Models;
+﻿namespace CatalogAPI.Data;
 public class Product
 {
     public int Id { get; set; }

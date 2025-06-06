@@ -1,4 +1,5 @@
-using OrderingAPI;
+using Microsoft.EntityFrameworkCore;
+using OrderingAPI.Data;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -6,6 +7,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseInMemoryDatabase("OrderingDb"));
 
 var app = builder.Build();
 
@@ -23,7 +26,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-var Orders = new List<Order>();
+PrepareDb.LoadData(app);
 
 app.MapGet("/order/{userName}", GetOrders)
     .WithName("GetOrder");
@@ -31,48 +34,32 @@ app.MapGet("/order/{userName}", GetOrders)
 app.MapPost("/order", CheckOutOrder)
     .WithName("CheckoutOrder");
 
-app.MapPut("/order/{id}",UpdateOrder)
+app.MapPut("/order/{orderId}", UpdateOrder)
     .WithName("UpdateOrder");
 
-app.MapDelete("/order/{id}",DeleteOrder)
+app.MapDelete("/order/{orderId}",DeleteOrder)
     .WithName("DeleteOrder");
 
 app.Run();
 
 
-IEnumerable<Order> GetOrders(string userName)
+IEnumerable<Order> GetOrders(AppDbContext appDbContext, string userName)
 {
-    if(Orders.Count == 0)
-    {
-        Orders.Add(new Order() {
-            OrderId = 1,
-            UserName = userName,
-            FirstName = "Elango",
-            LastName = "Srinivasan",
-            EmailAddress = "srielango@gmail.com",
-            AddressLine = "Chennai",
-            Country = "India",
-            State ="TN",
-            ZipCode = "123456",
-            TotalPrice = 350
-        });
-    }
-
-    return Orders.Where(x => x.UserName == userName)
+    return appDbContext.Orders.Where(x => x.UserName == userName)
         .ToList();
 }
 
-int CheckOutOrder(Order order)
+int CheckOutOrder(AppDbContext appDbContext, Order order)
 {
-    order.OrderId = Orders.Count() + 1;
-    Orders.Add(order);
+    appDbContext.Orders.Add(order);
+    appDbContext.SaveChanges();
 
     return order.OrderId;
 }
 
-void UpdateOrder(int orderId, Order order)
+void UpdateOrder(AppDbContext appDbContext, int orderId, Order order)
 {
-    var existingOrder = Orders.FirstOrDefault(x => x.OrderId == orderId);
+    var existingOrder = appDbContext.Orders.FirstOrDefault(x => x.OrderId == orderId);
     if (existingOrder != null)
     {
         existingOrder.UserName = order.UserName;
@@ -84,14 +71,16 @@ void UpdateOrder(int orderId, Order order)
         existingOrder.State = order.State;
         existingOrder.ZipCode = order.ZipCode;
         existingOrder.TotalPrice = order.TotalPrice;
-    }
+    };
+    appDbContext.SaveChanges();
 }
 
-void DeleteOrder(int orderId)
+void DeleteOrder(AppDbContext appDbContext, int orderId)
 {
-    var order = Orders.FirstOrDefault(x => x.OrderId == orderId);
+    var order = appDbContext.Orders.FirstOrDefault(x => x.OrderId == orderId);
     if (order != null)
     {
-        Orders.Remove(order);
+        appDbContext.Orders.Remove(order);
     }
+    appDbContext.SaveChanges();
 }

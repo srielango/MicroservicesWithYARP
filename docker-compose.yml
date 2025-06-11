@@ -35,3 +35,16 @@ services:
       - "5002:80"
     environment:
       - ASPNETCORE_URLS=http://+:80
+  ecommercegateway:
+    build:
+      context: ./ECommerceGateway
+      dockerfile: Dockerfile
+    image: ecommercegateway
+    ports:
+      - "5003:80"
+    environment:
+      - ASPNETCORE_URLS=http://+:80
+    depends_on:
+      - catalogapi
+      - basketapi
+      - orderingapi

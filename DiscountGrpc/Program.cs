@@ -7,6 +7,8 @@ builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 // Add services to the container.
 builder.Services.AddGrpc();
 
+builder.WebHost.UseUrls("http://+:9090");
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

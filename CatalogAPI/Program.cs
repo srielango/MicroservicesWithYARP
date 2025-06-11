@@ -10,6 +10,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 var app = builder.Build();
 
+builder.WebHost.UseUrls("http://+:80");
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();

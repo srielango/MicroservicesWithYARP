@@ -1,0 +1,37 @@
+services:
+  discountgrpc:
+    build:
+      context: ./DiscountGrpc
+      dockerfile: Dockerfile
+    image: discountgrpc
+    ports:
+      - "9090:9090"
+  catalogapi:
+    image: catalogapi
+    build:
+      context: ./CatalogAPI
+      dockerfile: Dockerfile
+    ports:
+      - "5000:80"
+    environment:
+      - ASPNETCORE_URLS=http://+:80
+  basketapi:
+    image: basketapi
+    build:
+      context: ./BasketAPI
+      dockerfile: Dockerfile
+    ports:
+      - "5001:80"
+    environment:
+      - DISCOUNT_GRPC_URL=http://discountgrpc:9090
+    depends_on:
+      - discountgrpc
+  orderingapi:
+    image: orderingapi
+    build:
+      context: ./OrderingAPI
+      dockerfile: Dockerfile
+    ports:
+      - "5002:80"
+    environment:
+      - ASPNETCORE_URLS=http://+:80

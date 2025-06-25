@@ -14,7 +14,7 @@ namespace BasketAPI.Data
             modelBuilder.Entity<ShoppingCart>()
                 .HasKey(sc => sc.UserName);
             modelBuilder.Entity<ShoppingCartItem>()
-                .HasKey(sci => new {sci.UserName, sci.ProductName });
+                .HasKey(sci => new { sci.UserName, sci.ProductName });
         }
     }
 }

@@ -16,8 +16,6 @@ builder.Services.AddGrpcClient<DiscountProtoService.DiscountProtoServiceClient>(
 });
 builder.Services.AddScoped<DiscountGrpcService>();
 
-builder.WebHost.UseUrls("http://+:80");
-
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -29,6 +27,10 @@ if (app.Environment.IsDevelopment())
         options.HideClientButton = true;
         options.HideModels = true;
     });
+}
+else
+{
+    builder.WebHost.UseUrls("http://+:80");
 }
 
 app.UseHttpsRedirection();
@@ -56,13 +58,16 @@ ShoppingCart? GetBasket(AppDbContext appDbContext, string userName)
         .FirstOrDefault(x => x.UserName == userName);
 }
 
-async Task<ShoppingCart?> UpdateBasket(DiscountGrpcService discountGrpcService, ShoppingCart basket)
+async Task<ShoppingCart?> UpdateBasket(AppDbContext appDbContext, DiscountGrpcService discountGrpcService,string userName, ShoppingCart basket)
 {
+    DeleteBasket(appDbContext, userName);
     foreach(var item in basket.Items)
     {
         var coupon = await discountGrpcService.GetDiscountAsync(item.ProductName);
         item.Price -= coupon.Amount;
     }
+    appDbContext.ShoppingCarts.Add(basket);
+    await appDbContext.SaveChangesAsync();
     return basket;
 }
 

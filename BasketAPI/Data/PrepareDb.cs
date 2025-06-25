@@ -27,8 +27,8 @@ namespace BasketAPI.Data
                 UserName = userName,
                 Items = new List<ShoppingCartItem>
                 {
-                    new ShoppingCartItem {UserName = userName, ProductName = "Samsung 10", Price = 100, Quantity = 1 },
-                    new ShoppingCartItem {UserName = userName, ProductName = "IPhone X", Price = 200, Quantity = 2 }
+                    new ShoppingCartItem { UserName = userName, ProductName = "Samsung 10", Price = 100, Quantity = 1 },
+                    new ShoppingCartItem { UserName = userName, ProductName = "IPhone X", Price = 200, Quantity = 2 }
                 }
             });
 

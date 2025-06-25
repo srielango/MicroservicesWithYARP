@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using OrderingAPI;
 using OrderingAPI.Data;
 using Scalar.AspNetCore;
 
@@ -10,7 +11,6 @@ builder.Services.AddOpenApi();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseInMemoryDatabase("OrderingDb"));
 
-builder.WebHost.UseUrls("http://+:80");
 
 var app = builder.Build();
 
@@ -24,6 +24,10 @@ if (app.Environment.IsDevelopment())
         options.HideClientButton = true;
         options.HideModels = true;
     });
+}
+else
+{
+    builder.WebHost.UseUrls("http://+:80"); 
 }
 
 app.UseHttpsRedirection();
@@ -51,8 +55,21 @@ IEnumerable<Order> GetOrders(AppDbContext appDbContext, string userName)
         .ToList();
 }
 
-int CheckOutOrder(AppDbContext appDbContext, Order order)
+int CheckOutOrder(AppDbContext appDbContext, OrderRequest orderRequest)
 {
+    var order = new Order
+    {
+        UserName = orderRequest.UserName,
+        FirstName = orderRequest.FirstName,
+        LastName = orderRequest.LastName,
+        EmailAddress = orderRequest.EmailAddress,
+        AddressLine = orderRequest.AddressLine,
+        Country = orderRequest.Country,
+        State = orderRequest.State,
+        ZipCode = orderRequest.ZipCode,
+        TotalPrice = orderRequest.TotalPrice
+    };
+
     appDbContext.Orders.Add(order);
     appDbContext.SaveChanges();
 

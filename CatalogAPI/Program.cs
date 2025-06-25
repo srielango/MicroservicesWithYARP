@@ -10,7 +10,6 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 var app = builder.Build();
 
-builder.WebHost.UseUrls("http://+:80");
 
 if (app.Environment.IsDevelopment())
 {
@@ -22,8 +21,14 @@ if (app.Environment.IsDevelopment())
         options.HideModels = true;
     });
 }
+else
+{
+    builder.WebHost.UseUrls("http://+:80");
+}
 
 app.UseHttpsRedirection();
+
+app.UseStaticFiles();
 
 PrapareDb.LoadData(app);
 
@@ -64,8 +69,38 @@ IResult GetProductByCategory(AppDbContext appDbContext, string category)
         .ToList());
 }
 
-IResult CreateProduct(AppDbContext appDbContext, Product product)
+async Task<IResult> CreateProduct(AppDbContext appDbContext, HttpRequest request)
 {
+    if(!request.HasFormContentType)
+    {
+        return Results.BadRequest("Invalid request format. Expected form data.");
+    }
+    
+    var form = await request.ReadFormAsync();
+    var imageFile = form.Files["image"];
+
+    string? imageUrl = null;
+    if (imageFile != null && imageFile.Length > 0)
+    {
+        var fileName = Path.GetFileName(imageFile.FileName);
+        var filePath = Path.Combine("wwwroot", "images", fileName);
+        using (var stream = new FileStream(filePath, FileMode.Create))
+        {
+            await imageFile.CopyToAsync(stream);
+        }
+        imageUrl = $"/images/{fileName}";
+    }
+
+    var product = new Product
+    {
+        Category = form["category"],
+        Name = form["name"],
+        Summary = form["summary"],
+        Description = form["description"],
+        Price = decimal.TryParse(form["price"], out var price) ? price : 0.0M,
+        ImageFile = imageUrl ?? "default.png", // Default image if none provided
+    };
+
     appDbContext.Products.Add(product);
     appDbContext.SaveChanges();
     return Results.Created($"/products/{product.Id}", product);
